@@ -234,9 +234,8 @@ Compito
 	•	Confronta le statistiche globali (*_mean, *_rom).
 	•	Considera la simmetria L/R quando presente (es. knee_L vs knee_R allo stesso checkpoint).
 	•	Se una feature manca in uno dei due, ignorala senza penalizzare.
-	2.	Fornisci pochi consigli pratici (2–6 frasi brevi) su come migliorare la forma nello squat del candidato, basandoti solo sulle differenze osservate nei dati.
-	3.	Chiudi con una breve descrizione (2–4 frasi) di cosa è stato fatto bene e cosa va migliorato.
-	4.	Assegna uno score complessivo da 0 a 1 sulla qualità dell’esecuzione dello squat del candidato, dove 1 = eccellente aderenza al benchmark. Includi una riga di giustificazione dello score.
+	2.	Fornisci  una breve descrizione (2–4 frasi) di cosa è stato fatto bene e cosa va migliorato.
+	3.	Assegna uno score complessivo da 0 a 1 sulla qualità dell’esecuzione dello squat del candidato, dove 1 = eccellente aderenza al benchmark. Includi una riga di giustificazione dello score.
 
 Stile di risposta
 	•	In italiano, chiaro e conciso.
@@ -244,6 +243,5 @@ Stile di risposta
 	•	Non introdurre soglie/regole arbitrarie: deduci liberamente dai numeri forniti.
 
 Formato di uscita (obbligatorio)
-	•	Suggerimenti rapidi: (2–6 frasi)
 	•	Sintesi: (2–4 frasi: cosa è andato bene / cosa migliorare)
 	•	Score (0–1): X.XX — breve motivazione
