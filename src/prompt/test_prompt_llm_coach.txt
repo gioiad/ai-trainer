@@ -1,0 +1,249 @@
+PROMPT PER LLM — CONFRONTO DI DUE SQUAT
+
+Ruolo: Agisci come personal trainer. Stai confrontando l’esecuzione di uno squat “candidato” con un “benchmark/GT”.
+
+Contesto (come leggere i dati)
+	•	Riceverai due oggetti JSON nel formato rep_assessment.
+	•	rep_assessment contiene:
+	•	mode: come è stato ottenuto il pacchetto (es. "gt" per benchmark; "reps" per elenco ripetizioni; "last" per l’ultima rep).
+	•	payload.reps_count: quante ripetizioni sono state aggregate.
+	•	payload.template con tre blocchi:
+	1.	checkpoints → valori a 5 istanti canonici di una ripetizione, su asse temporale normalizzato τ∈[0,1]:
+	•	0.00 = top_start (inizio rep, posizione alta)
+	•	0.25 = mid_ecc (metà fase eccentrica, discesa)
+	•	0.50 = bottom (punto più basso / massima chiusura angolare)
+	•	0.75 = mid_con (metà fase concentrica, risalita)
+	•	1.00 = top_end (fine rep, posizione alta)
+I valori di ciascuna feature ai checkpoint derivano da interpolazione della serie temporale della rep normalizzata in τ; se sono state aggregate più ripetizioni, il valore riportato è la mediana tra le rep.
+	2.	timing → tempi in secondi e frazioni temporali:
+	•	dur_ecc_s: durata fase eccentrica (discesa)
+	•	dur_con_s: durata fase concentrica (salita)
+	•	dur_rep_s: durata totale rep
+	•	ecc_frac: quota eccentrica su totale (0–1)
+	•	con_frac: quota concentrica su totale (0–1)
+	3.	global → statistiche sulla serie completa della ripetizione (dopo lieve smoothing temporale):
+	•	*_mean: media della feature lungo la rep
+	•	*_rom: Range Of Motion = max − min della feature lungo la rep
+Se reps_count>1 (benchmark), questi valori sono mediane sulle rep.
+	•	Invarianza di vista: le feature angolari sono calcolate in 3D (world landmarks) e quindi sono indipendenti dall’inquadratura. Usiamo un body frame centrato sul bacino per posizioni/rapporti normalizzati.
+
+Significato delle feature (unità e definizioni)
+
+Tutte le angolazioni sono in gradi (°).
+	•	knee_L_deg_3d, knee_R_deg_3d: angolo al ginocchio (triade: anca–ginocchio–caviglia). Valori più bassi indicano maggiore chiusura del ginocchio (maggiore profondità).
+	•	hip_L_deg_3d, hip_R_deg_3d: angolo all’anca (triade: spalla–anca–ginocchio). Approssima l’angolo tronco-coscia.
+	•	shoulder_L_deg_3d, shoulder_R_deg_3d: angolo alla spalla (triade: gomito–spalla–anca). Utile se le braccia contribuiscono alla postura.
+	•	torso_incline_deg: inclinazione del tronco rispetto alla verticale del body frame (0° ≈ tronco verticale).
+
+Feature posturali/globali:
+	•	stance_width_norm: distanza tra le caviglie normalizzata alla distanza tra le anche (≈1.0 = larghezza-anche).
+	•	pelvis_y_body_mean, pelvis_y_body_rom: quota verticale del bacino nel body frame e sua escursione. Spesso la media è ~0 perché l’origine è sul bacino.
+
+Nota su aggregazioni: se reps_count>1 (benchmark), i valori di checkpoints, timing e global sono mediane tra le ripetizioni; se è una singola rep, sono i valori di quella specifica rep.
+
+Dati di input
+
+BENCHMARK / GT (rep_assessment):
+{
+  "input_meta": {
+    "canonical_key": [
+      "WeightExercises",
+      "BWSquat"
+    ],
+    "name": "Squat",
+    "clip_path": "data/benchmark/clip/10526.mp4"
+  },
+  "rep_assessment": {
+    "mode": "gt",
+    "payload": {
+      "reps_count": 4,
+      "template": {
+        "checkpoints": {
+          "0.00": {
+            "knee_L_deg_3d": 168.91132354736328,
+            "knee_R_deg_3d": 173.17916870117188,
+            "hip_L_deg_3d": 168.95185089111328,
+            "hip_R_deg_3d": 176.84072875976562,
+            "shoulder_L_deg_3d": 93.25086975097656,
+            "shoulder_R_deg_3d": 78.11515426635742,
+            "torso_incline_deg": 0.16580211371183395
+          },
+          "0.25": {
+            "knee_L_deg_3d": 102.47943005338772,
+            "knee_R_deg_3d": 97.33480878697142,
+            "hip_L_deg_3d": 93.03510963047239,
+            "hip_R_deg_3d": 96.12196096857102,
+            "shoulder_L_deg_3d": 102.30310931715277,
+            "shoulder_R_deg_3d": 105.98041485655223,
+            "torso_incline_deg": 1.204896171102365
+          },
+          "0.50": {
+            "knee_L_deg_3d": 64.372044365681,
+            "knee_R_deg_3d": 52.28664740204505,
+            "hip_L_deg_3d": 37.34854317452758,
+            "hip_R_deg_3d": 42.877329375634375,
+            "shoulder_L_deg_3d": 110.87134241118247,
+            "shoulder_R_deg_3d": 120.2787006963274,
+            "torso_incline_deg": 4.943324940029894
+          },
+          "0.75": {
+            "knee_L_deg_3d": 125.06930085148267,
+            "knee_R_deg_3d": 113.06948919361363,
+            "hip_L_deg_3d": 108.7111863496448,
+            "hip_R_deg_3d": 104.03841361600334,
+            "shoulder_L_deg_3d": 103.81041669782758,
+            "shoulder_R_deg_3d": 104.6170291260204,
+            "torso_incline_deg": 4.720924904749478
+          },
+          "1.00": {
+            "knee_L_deg_3d": 168.53206634521484,
+            "knee_R_deg_3d": 173.1449203491211,
+            "hip_L_deg_3d": 170.07813262939453,
+            "hip_R_deg_3d": 174.11236572265625,
+            "shoulder_L_deg_3d": 93.30861282348633,
+            "shoulder_R_deg_3d": 78.6197624206543,
+            "torso_incline_deg": 1.4100086688995361
+          }
+        },
+        "timing": {
+          "dur_ecc_s": 1.334666666666667,
+          "dur_con_s": 1.2012,
+          "dur_rep_s": 2.5025000000000004,
+          "ecc_frac": 0.519914651493599,
+          "con_frac": 0.48008534850640106
+        },
+        "global": {
+          "hip_L_deg_3d_mean": 105.35721206665039,
+          "hip_L_deg_3d_rom": 134.0488510131836,
+          "hip_R_deg_3d_mean": 107.08747863769531,
+          "hip_R_deg_3d_rom": 135.53202056884766,
+          "knee_L_deg_3d_mean": 115.78276443481445,
+          "knee_L_deg_3d_rom": 104.32285690307617,
+          "knee_R_deg_3d_mean": 109.31570434570312,
+          "knee_R_deg_3d_rom": 121.36862182617188,
+          "pelvis_y_body_mean": 0.0,
+          "pelvis_y_body_rom": 0.0,
+          "stance_width_norm_mean": 1.7583943009376526,
+          "torso_incline_deg_mean": 3.070043921470642,
+          "torso_incline_deg_rom": 5.356704950332642
+        },
+        "meta": {
+          "reps_aggregated": 4
+        }
+      }
+    }
+  }
+}
+
+CANDIDATO / ESECUZIONE DA VALUTARE (rep_assessment):
+{
+  "input_meta": {
+    "canonical_key": [
+      "Unknown",
+      "Unknown"
+    ],
+    "name": "PXL_20250910_144505101",
+    "clip_path": "data/test/PXL_20250910_144505101.mp4"
+  },
+  "rep_assessment": {
+    "mode": "gt",
+    "payload": {
+      "reps_count": 1,
+      "template": {
+        "checkpoints": {
+          "0.00": {
+            "knee_L_deg_3d": 160.97250366210938,
+            "knee_R_deg_3d": 169.5576629638672,
+            "hip_L_deg_3d": 165.13401794433594,
+            "hip_R_deg_3d": 171.54876708984375,
+            "shoulder_L_deg_3d": 13.809983253479004,
+            "shoulder_R_deg_3d": 16.220577239990234,
+            "torso_incline_deg": 3.7527127265930176
+          },
+          "0.25": {
+            "knee_L_deg_3d": 117.83692169189453,
+            "knee_R_deg_3d": 113.09185028076172,
+            "hip_L_deg_3d": 101.00582122802734,
+            "hip_R_deg_3d": 103.05283737182617,
+            "shoulder_L_deg_3d": 91.7634391784668,
+            "shoulder_R_deg_3d": 74.71218872070312,
+            "torso_incline_deg": 4.24145770072937
+          },
+          "0.50": {
+            "knee_L_deg_3d": 81.3840103149414,
+            "knee_R_deg_3d": 69.20221710205078,
+            "hip_L_deg_3d": 60.09138107299805,
+            "hip_R_deg_3d": 50.48371887207031,
+            "shoulder_L_deg_3d": 101.30308532714844,
+            "shoulder_R_deg_3d": 92.41127014160156,
+            "torso_incline_deg": 1.3875162601470947
+          },
+          "0.75": {
+            "knee_L_deg_3d": 119.56422913819037,
+            "knee_R_deg_3d": 124.01105336168004,
+            "hip_L_deg_3d": 107.45616017102269,
+            "hip_R_deg_3d": 110.70645996535092,
+            "shoulder_L_deg_3d": 63.551578712996914,
+            "shoulder_R_deg_3d": 53.88822379120938,
+            "torso_incline_deg": 3.8060082494091354
+          },
+          "1.00": {
+            "knee_L_deg_3d": 170.6493377685547,
+            "knee_R_deg_3d": 172.62744140625,
+            "hip_L_deg_3d": 169.58399963378906,
+            "hip_R_deg_3d": 175.46849060058594,
+            "shoulder_L_deg_3d": 17.9005069732666,
+            "shoulder_R_deg_3d": 12.275259971618652,
+            "torso_incline_deg": 5.185229778289795
+          }
+        },
+        "timing": {
+          "dur_ecc_s": 3.0307799206349206,
+          "dur_con_s": 1.3391818253968255,
+          "dur_rep_s": 4.369961746031747,
+          "ecc_frac": 0.6935483870967741,
+          "con_frac": 0.3064516129032258
+        },
+        "global": {
+          "hip_L_deg_3d_mean": 109.60220336914062,
+          "hip_L_deg_3d_rom": 109.57148742675781,
+          "hip_R_deg_3d_mean": 111.59286499023438,
+          "hip_R_deg_3d_rom": 128.74867248535156,
+          "knee_L_deg_3d_mean": 122.53536987304688,
+          "knee_L_deg_3d_rom": 89.87030029296875,
+          "knee_R_deg_3d_mean": 120.08087921142578,
+          "knee_R_deg_3d_rom": 109.769775390625,
+          "pelvis_y_body_mean": 0.0,
+          "pelvis_y_body_rom": 0.0,
+          "stance_width_norm_mean": 1.2397475242614746,
+          "torso_incline_deg_mean": 3.2252023220062256,
+          "torso_incline_deg_rom": 7.041630268096924
+        },
+        "meta": {
+          "reps_aggregated": 1
+        }
+      }
+    }
+  }
+}
+
+Compito
+	1.	Confronta benchmark e candidato:
+	•	Allinea per checkpoint (0.00, 0.25, 0.50, 0.75, 1.00) e confronta le stesse feature disponibili su entrambi.
+	•	Confronta i tempi (dur_ecc_s, dur_con_s, dur_rep_s, ecc_frac, con_frac).
+	•	Confronta le statistiche globali (*_mean, *_rom).
+	•	Considera la simmetria L/R quando presente (es. knee_L vs knee_R allo stesso checkpoint).
+	•	Se una feature manca in uno dei due, ignorala senza penalizzare.
+	2.	Fornisci pochi consigli pratici (2–6 frasi brevi) su come migliorare la forma nello squat del candidato, basandoti solo sulle differenze osservate nei dati.
+	3.	Chiudi con una breve descrizione (2–4 frasi) di cosa è stato fatto bene e cosa va migliorato.
+	4.	Assegna uno score complessivo da 0 a 1 sulla qualità dell’esecuzione dello squat del candidato, dove 1 = eccellente aderenza al benchmark. Includi una riga di giustificazione dello score.
+
+Stile di risposta
+	•	In italiano, chiaro e conciso.
+	•	Nessuna tabella; testo compatto con elenchi puntati solo se aiutano la leggibilità.
+	•	Non introdurre soglie/regole arbitrarie: deduci liberamente dai numeri forniti.
+
+Formato di uscita (obbligatorio)
+	•	Suggerimenti rapidi: (2–6 frasi)
+	•	Sintesi: (2–4 frasi: cosa è andato bene / cosa migliorare)
+	•	Score (0–1): X.XX — breve motivazione
